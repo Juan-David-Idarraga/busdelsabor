@@ -114,5 +114,6 @@ El resultado se encontrará en el directorio `dist/`.
 
 ---
 
-**Desarrollado por Manus AI**
-*Tech Lead & Developer Relations*
+**Juan Idarraga**
+*   **Empresa**: Technology of Jota
+*   **Portafolio**: [LinkedIn Profile](https://www.linkedin.com/in/juan-david-idarraga-11088b387/)
