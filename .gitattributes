@@ -1,0 +1,11 @@
+# 1. Ocultar HTML y CSS de la barra de estadísticas
+*.html linguist-detectable=false
+*.css linguist-detectable=false
+
+*.js linguist-detectable=true
+*.jsx linguist-detectable=true
+*.ts linguist-detectable=true
+*.tsx linguist-detectable=true
+
+package-lock.json linguist-generated=true
+yarn.lock linguist-generated=true
