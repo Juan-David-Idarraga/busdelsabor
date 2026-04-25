@@ -1,0 +1,36 @@
+{
+  "name": "bus-del-sabor-pos",
+  "version": "1.0.0",
+  "description": "Sistema de Ventas Bus del Sabor",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.busdelsabor.pos",
+    "productName": "Bus del Sabor POS",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": "nsis"
+    }
+  },
+  "author": "Technology of Jota",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "ip": "^2.0.1",
+    "node-machine-id": "^1.1.12",
+    "node-thermal-printer": "^4.6.0",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "electron-packager": "^17.1.2"
+  }
+}

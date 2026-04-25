@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Monitor de Cocina - Bus del Sabor</title>
+    <style>
+        :root {
+            --primary: #FFD166; --secondary: #00E5FF; --bg-base: #0B1121; --bg-panel: #151F32; 
+            --text-main: #F8FAFC; --text-muted: #94A3B8; --accent-green: #00FF87; --accent-red: #FF3366; 
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-base); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        header { background: rgba(0,0,0,0.5); padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--glass-border); flex-shrink: 0; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
+        .header-title { margin: 0; font-size: 1.8rem; font-weight: 900; color: var(--secondary); text-shadow: 0 0 10px rgba(0,229,255,0.3); text-transform: uppercase; letter-spacing: 1px;}
+        .status-badge { display: flex; align-items: center; gap: 8px; color: var(--accent-green); font-weight: bold; font-size: 1.1rem;}
+        .status-dot { width: 12px; height: 12px; background: var(--accent-green); border-radius: 50%; box-shadow: 0 0 10px var(--accent-green); animation: pulse-green-btn 2s infinite; }
+        
+        /* 🔥 GRILLA COMPACTA */
+        .cocina-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); grid-auto-rows: max-content; gap: 12px; padding: 15px; overflow-y: auto; align-content: start; flex: 1; }
+        .comanda { width: 100%; height: max-content; background: var(--bg-panel); border-radius: 12px; display: flex; flex-direction: column; border: 2px solid transparent; box-shadow: 0 5px 15px rgba(0,0,0,0.4); transition: 0.3s;}
+        .comanda-body { padding: 8px; flex: 1; display: flex; flex-direction: column; gap: 5px;}
+        .comanda-head { 
+            padding: 10px 15px; display: flex; justify-content: space-between; align-items: flex-start; 
+            font-weight: 900; border-bottom: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); 
+            border-radius: 10px 10px 0 0; flex-shrink: 0;
+        }
+
+        .comanda-head .cli-name { 
+            font-size: 1.05rem; text-transform: uppercase; color: white; flex: 1; 
+            white-space: normal; word-wrap: break-word; line-height: 1.2; padding-right: 10px; 
+        }
+        .comanda-head .ped-time { font-size: 1rem; background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 6px; margin-left: 8px;}
+        
+        .comanda-verde { border-color: var(--accent-green); box-shadow: 0 0 15px rgba(0,255,135,0.1); } .comanda-verde .comanda-head { background: rgba(0,255,135,0.15); color: var(--accent-green);} 
+        .comanda-naranja { border-color: var(--primary); box-shadow: 0 0 15px rgba(255,209,102,0.1);} .comanda-naranja .comanda-head { background: rgba(255,209,102,0.15); color: var(--primary); } 
+        .comanda-rojo { border-color: var(--accent-red); animation: parpadeo 1s infinite alternate; } .comanda-rojo .comanda-head { background: rgba(255,51,102,0.2); color: var(--accent-red); } 
+        
+        /* 🔥 ÍTEMS COMPACTOS */
+        .comanda-item { position: relative; background: rgba(0,0,0,0.3); padding: 8px 10px; border-radius: 8px; border-left: 4px solid var(--secondary); cursor: pointer; transition: all 0.2s ease-in-out; overflow: hidden; }
+        .comanda-item:active { transform: scale(0.97); }
+        .comanda-item.listo { background: rgba(0, 255, 135, 0.15) !important; border-left-color: var(--accent-green) !important; transform: scale(0.98); }
+        .comanda-item.listo .item-name { text-decoration: line-through; color: var(--accent-green) !important; }
+        .comanda-item.listo .comanda-list { text-decoration: line-through; opacity: 0.5; }
+        .comanda-item.listo::after { content: '✔️'; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 1.5rem; filter: drop-shadow(0 0 8px rgba(0,255,135,0.8)); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        
+        /* 🔥 BOTONES INFERIORES REDUCIDOS */
+        .kds-action-btn { padding: 12px; font-weight: 900; font-size: 1.1rem; background: linear-gradient(135deg, #FF00E5 0%, #A800FF 100%) !important; color: white !important; border: none; cursor: pointer; border-radius: 0 0 10px 10px; flex-shrink: 0; transition: 0.3s; box-shadow: 0 0 10px rgba(168, 0, 255, 0.4) !important; text-shadow: 0 0 4px rgba(0,0,0,0.6); text-transform: uppercase; }
+        .kds-action-btn:active { transform: scale(0.97); }
+        .btn-despachar-listo { padding: 12px; font-weight: 900; font-size: 1.2rem !important; background: linear-gradient(135deg, #00FF87 0%, #00cc6a 100%) !important; color: #000 !important; border: none; cursor: pointer; border-radius: 0 0 10px 10px; flex-shrink: 0; text-transform: uppercase; box-shadow: 0 -3px 15px rgba(0, 255, 135, 0.4) !important; animation: pulse-green-btn 1s infinite alternate; transition: 0.2s; }
+        .btn-despachar-listo:active { transform: scale(0.98); }
+        
+        .comanda-lista-glow { border-color: var(--accent-green) !important; box-shadow: 0 0 25px rgba(0,255,135,0.4) !important; }
+        .comanda-marked-complete { border-color: #FF00E5 !important; box-shadow: 0 0 40px rgba(255, 0, 229, 0.8) !important; animation: pulsate-magenta-head 1s infinite alternate; }
+        .comanda-marked-complete .kds-action-btn { background: #9000cc !important; box-shadow: inset 0 0 15px rgba(0,0,0,0.6) !important; transform: translateY(2px) scale(0.98); }
+        @keyframes popIn { 0% { transform: translateY(-50%) scale(0); opacity: 0; } 100% { transform: translateY(-50%) scale(1); opacity: 1; } }
+        @keyframes pulsate-magenta-head { 0% { box-shadow: 0 0 5px rgba(255, 0, 229, 0.2); background: rgba(0,0,0,0.3); color: white; } 100% { box-shadow: 0 0 20px rgba(255, 0, 229, 0.6); background: rgba(255, 0, 229, 0.35); color: #FFD166; } }
+        @keyframes pulse-green-btn { 0% { box-shadow: 0 0 10px rgba(0, 255, 135, 0.4); } 100% { box-shadow: 0 0 30px rgba(0, 255, 135, 1), inset 0 0 10px rgba(255,255,255,0.5); text-shadow: 0 0 5px white; } }
+        @keyframes parpadeo { from { box-shadow: 0 0 5px rgba(255,51,102,0.3); } to { box-shadow: 0 0 25px rgba(255,51,102,0.6); } }
+        ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 8px;} ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 8px; } ::-webkit-scrollbar-thumb:hover { background: var(--secondary); }
+    </style>
+</head>
+<body>
+    <audio id="audio-listo" src="assets/listo.mp3" preload="auto"></audio>
+    <audio id="audio-nuevo" src="assets/timbre.mp3" preload="auto"></audio>
+
+    <div id="pantalla-desbloqueo" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(11, 17, 33, 0.95); backdrop-filter: blur(10px); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer;" onclick="desbloquearAudio()">
+        <span style="font-size:6rem; margin-bottom: 20px; animation: pulse-green-btn 2s infinite;">👆</span>
+        <h1 style="color:var(--accent-green); font-family:system-ui, sans-serif; text-align:center; font-size: 2.5rem; text-shadow: 0 0 20px rgba(0,255,135,0.4);">TOCA LA PANTALLA<br><span style="color:white; font-size:1.5rem;">Para activar el sonido de la cocina</span></h1>
+    </div>
+
+    <header>
+        <h1 class="header-title">👨‍🍳 KDS - Cocina Activa</h1>
+        <div class="status-badge">
+            <span class="status-dot"></span> EN LÍNEA
+        </div>
+    </header>
+
+    <div id="modal-confirm-cocina" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:var(--bg-panel); border:2px solid var(--accent-red); border-radius:25px; width:90%; max-width:450px; padding:30px; text-align:center; box-shadow:0 0 40px rgba(255,51,102,0.2);">
+            <div style="font-size:4rem; margin-bottom:10px;">⚠️</div>
+            <h2 style="color:var(--text-main); margin-bottom:20px; font-size:1.5rem;">¿Entregar este pedido?</h2>
+            <p id="confirm-msg-cocina" style="color:var(--text-muted); margin-bottom:30px; font-size:1.1rem;"></p>
+            <div style="display:flex; gap:15px;">
+                <button id="btn-confirm-no" style="flex:1; padding:15px; border-radius:12px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.05); color:white; font-weight:900; cursor:pointer;">CANCELAR</button>
+                <button id="btn-confirm-si" style="flex:1; padding:15px; border-radius:12px; border:none; background:var(--accent-red); color:white; font-weight:900; cursor:pointer; box-shadow:0 0 15px rgba(255,51,102,0.3);">SÍ, ENTREGAR</button>
+            </div>
+        </div>
+    </div>
+
+    <main id="kitchen-grid" class="cocina-grid"></main>
+    
+    <script>
+        // ============================================================
+        // 🚀 KDS ROBUSTO CON DOBLE CONFIRMACIÓN Y SONIDOS
+        // ============================================================
+        let itemsCocinaListos = new Set();
+        let pedsGlobal = [];
+        let bloqueadoPorAccion = false;
+
+        // Variables de Sonido
+        let pedidosListosSonados = new Set();
+        let idsPedidosConocidos = new Set();
+        let esPrimeraCargaCocina = true;
+
+        // 🔥 FUNCIÓN PARA DESBLOQUEAR AUDIO (TABLETS/CELULARES)
+        function desbloquearAudio() {
+            const aNuevo = document.getElementById('audio-nuevo');
+            const aListo = document.getElementById('audio-listo');
+            
+            if(aNuevo) { aNuevo.play().then(()=> { aNuevo.pause(); aNuevo.currentTime=0; }).catch(()=>{}); }
+            if(aListo) { aListo.play().then(()=> { aListo.pause(); aListo.currentTime=0; }).catch(()=>{}); }
+            
+            document.getElementById('pantalla-desbloqueo').style.display = 'none';
+        }
+
+        function playListo() { 
+            const a = document.getElementById('audio-listo'); 
+            if(a) { a.currentTime = 0; a.play().catch(e => console.log("Audio listo bloqueado:", e)); } 
+        }
+
+        function playNuevoPedido() { 
+            const a = document.getElementById('audio-nuevo'); 
+            if(a) { a.currentTime = 0; a.play().catch(e => console.log("Audio nuevo bloqueado:", e)); } 
+        }
+
+        async function fetchPedidos() {
+            if (bloqueadoPorAccion) return;
+
+            try {
+                const now = Date.now();
+                const [resPeds, resListos] = await Promise.all([
+                    fetch('/api/pedidos-pendientes?_t=' + now),
+                    fetch('/api/items-listos?_t=' + now)
+                ]);
+                
+                if(resPeds.ok && resListos.ok) {
+                    const nuevosPeds = await resPeds.json();
+                    
+                    // 🔥 DETECCIÓN DE PEDIDOS NUEVOS PARA EL TIMBRE 🔥
+                    if (!esPrimeraCargaCocina) {
+                        const hayNuevos = nuevosPeds.some(p => !idsPedidosConocidos.has(p.id));
+                        if (hayNuevos) {
+                            playNuevoPedido(); 
+                        }
+                    }
+                    
+                    idsPedidosConocidos = new Set(nuevosPeds.map(p => p.id));
+                    esPrimeraCargaCocina = false;
+
+                    pedsGlobal = nuevosPeds;
+                    const listosArray = await resListos.json();
+                    itemsCocinaListos = new Set(listosArray || []);
+                    renderKitchen(pedsGlobal);
+                }
+            } catch (error) { 
+                console.log("Servidor no disponible. Verifique conexión a PC Principal..."); 
+            }
+        }
+
+        setInterval(fetchPedidos, 3000); 
+        fetchPedidos(); 
+
+        async function toggleItemCocina(pedidoId, index, totalItems, element) {
+            const uniqueId = `${pedidoId}-${index}`;
+            bloqueadoPorAccion = true;
+            
+            if(itemsCocinaListos.has(uniqueId)) {
+                itemsCocinaListos.delete(uniqueId);
+                element.classList.remove('listo');
+            } else {
+                itemsCocinaListos.add(uniqueId);
+                element.classList.add('listo');
+            }
+            renderKitchen(pedsGlobal);
+
+            try {
+                await fetch('/api/toggle-item', {
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ idStr: uniqueId })
+                });
+            } catch(e) { console.error(e); }
+            finally { setTimeout(() => { bloqueadoPorAccion = false; }, 800); }
+        }
+
+        function renderKitchen(peds) { 
+            const el = document.getElementById('kitchen-grid'); if(!el || !peds) return; 
+            
+            if (peds.length === 0) {
+                el.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:50px; color:gray; font-size:1.5rem;">Sin pedidos pendientes, descanse soldado.</div>`;
+                return;
+            }
+
+            el.innerHTML = peds.map(p => { 
+                const itemsArray = p.productos_data.split('|||');
+                let allItemsDone = true;
+
+                const itemsHtml = itemsArray.map((s, index) => { 
+                    const parts = s.split('::'); const nombre = parts[1].toUpperCase(); const cantidad = parts[3] || 1; 
+                    const uniqueId = `${p.id}-${index}`;
+                    const isDone = itemsCocinaListos.has(uniqueId);
+                    if (!isDone) allItemsDone = false;
+                    
+                    const qtyBadge = cantidad > 1 ? `<span style="background:rgba(255,255,255,0.2); color:white; padding:2px 8px; border-radius:6px; margin-right:8px;">${cantidad}x</span>` : ''; 
+                    let icon = '🍴'; 
+                    if (nombre.includes('PAPA')) icon = '🍟'; else if (nombre.includes('VIENESA') || nombre.includes('AS ')) icon = '🌭'; else if (nombre.includes('POLLO')) icon = '🍗'; else if (nombre.includes('CHURRASCO') || nombre.includes('LOMO')) icon = '🥩';
+                    
+                    let detHtml = (parts[2] && parts[2] !== 'Sin extras' && parts[2] !== 'Normal') ? `<ul class="comanda-list" style="margin:5px 0 0 15px; color:lightgray; font-size:0.95rem; list-style:none; padding:0;">${parts[2].split('|').map(l => `<li>${l.trim()}</li>`).join('')}</ul>` : ''; 
+                    
+                    return `<div class="comanda-item ${isDone ? 'listo' : ''}" onclick="toggleItemCocina(${p.id}, ${index}, ${itemsArray.length}, this)"><div style="font-weight:bold; font-size:1rem; display:flex; align-items:center;">${qtyBadge}<span>${icon}</span>&nbsp;<span class="item-name">${parts[1]}</span></div>${detHtml}</div>`; 
+                }).join(''); 
+
+                // Lógica de Sonido Listo
+                if (allItemsDone && itemsArray.length > 0) {
+                    if (!pedidosListosSonados.has(p.id)) {
+                        playListo();
+                        pedidosListosSonados.add(p.id);
+                    }
+                } else {
+                    pedidosListosSonados.delete(p.id);
+                }
+
+                const min = Math.floor((new Date() - new Date(p.fecha))/60000); 
+                let colorClass = min > 20 ? 'comanda-rojo' : (min > 10 ? 'comanda-naranja' : 'comanda-verde'); 
+                
+                const btnClass = allItemsDone ? 'btn-despachar-listo' : 'kds-action-btn';
+                const btnText = allItemsDone ? '🚀 ¡ENTREGAR!' : '⏳ PREPARANDO...';
+                const cardHighlight = allItemsDone ? 'comanda-lista-glow' : '';
+
+                return `<div class="comanda ${colorClass} ${cardHighlight}" id="comanda-card-${p.id}"><div class="comanda-head"><span class="cli-name">👤 ${p.cliente}</span><span class="ped-time">⏱ ${min} min</span></div><div class="comanda-body">${itemsHtml}</div><button id="btn-fin-${p.id}" class="${btnClass}" onclick="finishPed(${p.id}, '${p.cliente}')">${btnText}</button></div>`; 
+            }).join(''); 
+        }
+
+        function confirmarCocina(cliente) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('modal-confirm-cocina');
+                document.getElementById('confirm-msg-cocina').innerHTML = `Vas a finalizar el pedido de:<br><b style="color:var(--secondary); font-size:1.3rem;">${cliente}</b>`;
+                modal.style.display = 'flex';
+                bloqueadoPorAccion = true;
+
+                document.getElementById('btn-confirm-si').onclick = () => {
+                    modal.style.display = 'none'; resolve(true);
+                };
+                document.getElementById('btn-confirm-no').onclick = () => {
+                    modal.style.display = 'none'; bloqueadoPorAccion = false; resolve(false);
+                };
+            });
+        }
+
+        async function finishPed(id, cliente) { 
+            const card = document.getElementById(`comanda-card-${id}`);
+            if (!card) return;
+            card.classList.add('comanda-marked-complete');
+            const confirmar = await confirmarCocina(cliente);
+            if (confirmar) {
+                const btn = document.getElementById(`btn-fin-${id}`);
+                if(btn) btn.innerHTML = '⌛...';
+                try {
+                    await fetch(`/api/finalizar-pedido/${id}`, { method: 'POST' });
+                    bloqueadoPorAccion = false;
+                    fetchPedidos(); 
+                } catch(e) { 
+                    card.classList.remove('comanda-marked-complete'); 
+                    bloqueadoPorAccion = false;
+                }
+            } else { card.classList.remove('comanda-marked-complete'); }
+        }
+    </script>
+</body>
+</html>
